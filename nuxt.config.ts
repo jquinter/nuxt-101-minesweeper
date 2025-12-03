@@ -9,4 +9,12 @@ export default defineNuxtConfig({
       ]
     }
   }
+  ,
+  vite: {
+    server: {
+      hmr: {
+        port: 24679
+      }
+    }
+  }
 })
