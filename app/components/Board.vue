@@ -35,6 +35,7 @@
       <p v-if="gameOver">Game Over! </p>
     </div>
   </div>
+  </div>
 </template>
 
 <script>
