@@ -8,6 +8,9 @@
     }"
     @click="handleClick"
     @contextmenu.prevent="handleRightClick"
+    @touchstart.passive="onTouchStart"
+    @touchend.prevent="onTouchEnd"
+    @touchcancel.prevent="onTouchCancel"
   >
     <span v-if="cellData.isRevealed && cellData.isMine">💣</span>
     <span v-if="cellData.isRevealed && cellData.adjacentMines > 0">{{ cellData.adjacentMines }}</span>
@@ -37,6 +40,36 @@ export default {
     },
     handleRightClick() {
       this.$emit('cell-flagged', this.rowIndex, this.colIndex);
+    }
+    ,
+    onTouchStart(e) {
+      // start long-press timer to toggle flag on long press
+      this._longPress = false;
+      if (this._pressTimer) clearTimeout(this._pressTimer);
+      this._pressTimer = setTimeout(() => {
+        this._longPress = true;
+        this.handleRightClick();
+      }, 600);
+    },
+    onTouchEnd(e) {
+      if (this._pressTimer) {
+        clearTimeout(this._pressTimer);
+        this._pressTimer = null;
+      }
+      // if it was a long press we already handled flagging
+      if (this._longPress) {
+        this._longPress = false;
+        return;
+      }
+      // treat as a normal tap
+      this.handleClick();
+    },
+    onTouchCancel(e) {
+      if (this._pressTimer) {
+        clearTimeout(this._pressTimer);
+        this._pressTimer = null;
+      }
+      this._longPress = false;
     }
   }
 }

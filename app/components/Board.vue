@@ -16,16 +16,15 @@
 
     <div
       class="board"
-      :style="{ '--cell-size': cellSize + 'px' }"
+      :style="{ '--cell-size': cellSize + 'px', '--cols': cols }"
       role="grid"
     >
-      <div class="board-row" v-for="(row, rowIndex) in boardData" :key="rowIndex">
       <Cell
-        v-for="(cell, colIndex) in row"
-        :key="colIndex"
-        :cell-data="cell"
-        :row-index="rowIndex"
-        :col-index="colIndex"
+        v-for="cellObj in cellsList"
+        :key="cellObj.row + '-' + cellObj.col"
+        :cell-data="cellObj.cell"
+        :row-index="cellObj.row"
+        :col-index="cellObj.col"
         @cell-clicked="handleCellClicked"
         @cell-flagged="handleCellFlagged"
       />
@@ -69,6 +68,17 @@ export default {
   },
   unmounted() {
     window.removeEventListener('resize', this.updateCellSize);
+  },
+  computed: {
+    cellsList() {
+      const list = [];
+      for (let r = 0; r < this.rows; r++) {
+        for (let c = 0; c < this.cols; c++) {
+          list.push({ cell: this.boardData[r][c], row: r, col: c });
+        }
+      }
+      return list;
+    }
   },
   methods: {
     initializeBoard() {
@@ -213,13 +223,12 @@ export default {
   padding: 16px;
 }
 .board {
-  display: inline-block;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell-size));
+  gap: 0;
   border: 1px solid #e5e7eb;
   background: #fff;
   padding: 8px;
-}
-.board-row {
-  display: flex;
 }
 .status {
   margin-top: 8px;
