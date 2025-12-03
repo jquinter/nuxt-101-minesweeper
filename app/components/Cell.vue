@@ -79,9 +79,14 @@ export default {
 .cell {
   width: var(--cell-size, 16px);
   height: var(--cell-size, 16px);
-  border: 1px solid black;
-  text-align: center;
-  font-size: 0.8em;
+  border: 1px solid #444;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  font-size: calc(var(--cell-size) * 0.55);
+  line-height: 1;
+  user-select: none;
 }
 .revealed {
   background-color: lightgray;
