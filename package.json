@@ -20,5 +20,7 @@
     "vitest": "^1.0.0",
     "@vue/test-utils": "^2.0.0-rc.18",
     "jsdom": "^22.1.0"
+  ,
+    "@vitejs/plugin-vue": "^6.0.2"
   }
 }
