@@ -1,5 +1,7 @@
 # Minesweeper — Playable Demo
 
+[![Coverage](https://codecov.io/gh/<OWNER>/<REPO>/branch/main/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/<OWNER>/<REPO>)
+
 A small Minesweeper-style demo built with Nuxt + Vue 3. This is a minimal, first-playable version used for learning and experimentation.
 
 ## What it is
