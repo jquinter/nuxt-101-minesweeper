@@ -4,7 +4,7 @@
     :class="{
       'revealed': cellData.isRevealed,
       'flagged': cellData.isFlagged,
-      'mine': cellData.isMine
+      'mine': cellData.isMine && (cellData.isRevealed || showMines)
     }"
     @click="handleClick"
     @contextmenu.prevent="handleRightClick"
@@ -12,7 +12,7 @@
     @touchend.prevent="onTouchEnd"
     @touchcancel.prevent="onTouchCancel"
   >
-    <span v-if="cellData.isRevealed && cellData.isMine">💣</span>
+    <span v-if="(cellData.isRevealed || showMines) && cellData.isMine">💣</span>
     <span v-if="cellData.isRevealed && cellData.adjacentMines > 0">{{ cellData.adjacentMines }}</span>
     <span v-if="cellData.isFlagged">🚩</span>
   </div>
@@ -24,6 +24,10 @@ export default {
     cellData: {
       type: Object,
       required: true
+    },
+    showMines: {
+      type: Boolean,
+      default: false
     },
     rowIndex: {
       type: Number,

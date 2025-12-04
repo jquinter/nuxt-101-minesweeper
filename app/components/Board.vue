@@ -15,6 +15,7 @@
         :cellData="item.cell"
         :rowIndex="item.row"
         :colIndex="item.col"
+        :showMines="debugMode"
         @cell-clicked="handleCellClicked"
         @cell-flagged="handleCellFlagged"
       />
@@ -54,6 +55,7 @@ export default {
       gameOver: false,
       won: false,
       lost: false,
+      debugMode: false,
       cellSize: 24
     };
   },
@@ -61,6 +63,12 @@ export default {
     this.startNewBoard();
     this.updateCellSize();
     window.addEventListener('resize', this.updateCellSize);
+    try {
+      const params = new URLSearchParams(window.location.search);
+      this.debugMode = params.has('DEBUG');
+    } catch (e) {
+      this.debugMode = false;
+    }
   },
   unmounted() {
     window.removeEventListener('resize', this.updateCellSize);
