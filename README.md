@@ -3,6 +3,8 @@
 [![Coverage](https://codecov.io/gh/jquinter/nuxt-101-minesweeper/branch/main/graph/badge.svg)](https://codecov.io/gh/jquinter/nuxt-101-minesweeper)
 [![Codecov](https://img.shields.io/codecov/c/github/jquinter/nuxt-101-minesweeper?logo=codecov&logoColor=white)](https://codecov.io/gh/jquinter/nuxt-101-minesweeper)
 
+[![CI](https://github.com/jquinter/nuxt-101-minesweeper/actions/workflows/ci.yml/badge.svg)](https://github.com/jquinter/nuxt-101-minesweeper/actions/workflows/ci.yml)
+
 A small Minesweeper-style demo built with Nuxt + Vue 3. This is a minimal, first-playable version used for learning and experimentation.
 
 ## What it is
