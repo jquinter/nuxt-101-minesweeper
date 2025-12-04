@@ -1,37 +1,32 @@
 <template>
   <div class="board-container">
     <div class="controls">
-      <label>
-        Rows: <input type="number" min="2" v-model.number="inputRows" />
-      </label>
-      <label>
-        Cols: <input type="number" min="2" v-model.number="inputCols" />
-      </label>
-      <label>
-        Mines: <input type="number" min="1" v-model.number="inputMines" />
-      </label>
+      <label>Rows: <input type="number" min="2" v-model.number="inputRows" /></label>
+      <label>Cols: <input type="number" min="2" v-model.number="inputCols" /></label>
+      <label>Mines: <input type="number" min="1" v-model.number="inputMines" /></label>
       <button @click="startNewBoard">Start</button>
       <button @click="restart">Restart</button>
     </div>
 
-    <div
-      class="board"
-      :style="{ '--cell-size': cellSize + 'px', '--cols': cols }"
-      role="grid"
-    >
+    <div class="board" :style="{ '--cell-size': cellSize + 'px', '--cols': cols }">
       <Cell
-        v-for="cellObj in cellsList"
-        :key="cellObj.row + '-' + cellObj.col"
-        :cell-data="cellObj.cell"
-        :row-index="cellObj.row"
-        :col-index="cellObj.col"
+        v-for="item in cellsList"
+        :key="item.row + '-' + item.col"
+        :cellData="item.cell"
+        :rowIndex="item.row"
+        :colIndex="item.col"
         @cell-clicked="handleCellClicked"
         @cell-flagged="handleCellFlagged"
       />
     </div>
-    <div class="status">
-      <p>Mines Left: {{ minesLeft }}</p>
-      <p v-if="gameOver">Game Over! </p>
+
+    <div class="status">Mines left: {{ minesLeft }}</div>
+
+    <div v-if="won || lost" class="overlay" :class="{ win: won, lose: lost }">
+      <div class="overlay-content">
+        <h2>{{ won ? 'You Win!' : 'You Lose' }}</h2>
+        <button @click="restart">Play Again</button>
+      </div>
     </div>
   </div>
 </template>
@@ -40,40 +35,25 @@
 import Cell from './Cell.vue';
 
 export default {
+  name: 'Board',
   components: { Cell },
   data() {
-    // initialize boardData synchronously so SSR / computed props don't access undefined
-    const initialRows = 10;
-    const initialCols = 10;
-    const initialMines = 15;
-    const boardData = [];
-    for (let r = 0; r < initialRows; r++) {
-      boardData[r] = [];
-      for (let c = 0; c < initialCols; c++) {
-        boardData[r][c] = {
-          isMine: false,
-          isRevealed: false,
-          isFlagged: false,
-          adjacentMines: 0
-        };
-      }
-    }
+    const defaultRows = 9;
+    const defaultCols = 9;
+    const defaultMines = 10;
 
     return {
-      // UI inputs
-      inputRows: initialRows,
-      inputCols: initialCols,
-      inputMines: initialMines,
-
-      // internal board state
-      rows: initialRows,
-      cols: initialCols,
-      mineCount: initialMines,
-      boardData: boardData,
-      minesLeft: 0,
+      inputRows: defaultRows,
+      inputCols: defaultCols,
+      inputMines: defaultMines,
+      rows: defaultRows,
+      cols: defaultCols,
+      mineCount: defaultMines,
+      boardData: [],
+      minesLeft: defaultMines,
       gameOver: false,
-
-      // responsive cell size (px)
+      won: false,
+      lost: false,
       cellSize: 24
     };
   },
@@ -90,7 +70,10 @@ export default {
       const list = [];
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
-          list.push({ cell: this.boardData[r][c], row: r, col: c });
+          const cell = (this.boardData[r] && this.boardData[r][c])
+            ? this.boardData[r][c]
+            : { isRevealed: false, isMine: false, isFlagged: false, adjacentMines: 0 };
+          list.push({ row: r, col: c, cell });
         }
       }
       return list;
@@ -98,61 +81,65 @@ export default {
   },
   methods: {
     initializeBoard() {
-      // Phase 1: create empty board
-      this.boardData = [];
+      const grid = [];
       for (let r = 0; r < this.rows; r++) {
-        this.boardData[r] = [];
+        const row = [];
         for (let c = 0; c < this.cols; c++) {
-          this.boardData[r][c] = {
-            isMine: false,
-            isRevealed: false,
-            isFlagged: false,
-            adjacentMines: 0
-          };
+          row.push({ isMine: false, isRevealed: false, isFlagged: false, adjacentMines: 0 });
+        }
+        grid.push(row);
+      }
+      let placed = 0;
+      while (placed < this.mineCount) {
+        const r = Math.floor(Math.random() * this.rows);
+        const c = Math.floor(Math.random() * this.cols);
+        if (!grid[r][c].isMine) {
+          grid[r][c].isMine = true;
+          placed++;
         }
       }
-
-      // Phase 2: place mines
-      let minesPlaced = 0;
-      while (minesPlaced < this.mineCount) {
-        const row = Math.floor(Math.random() * this.rows);
-        const col = Math.floor(Math.random() * this.cols);
-        if (!this.boardData[row][col].isMine) {
-          this.boardData[row][col].isMine = true;
-          minesPlaced++;
-        }
-      }
-
-      // Phase 3: compute adjacent mine counts
-      for (let row = 0; row < this.rows; row++) {
-        for (let col = 0; col < this.cols; col++) {
-          if (this.boardData[row][col].isMine) continue;
-          let adjacent = 0;
-          for (let i = -1; i <= 1; i++) {
-            for (let j = -1; j <= 1; j++) {
-              const nr = row + i;
-              const nc = col + j;
+      for (let r = 0; r < this.rows; r++) {
+        for (let c = 0; c < this.cols; c++) {
+          if (grid[r][c].isMine) continue;
+          let count = 0;
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              const nr = r + dr;
+              const nc = c + dc;
               if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
-                if (this.boardData[nr][nc].isMine) adjacent++;
+                if (grid[nr][nc].isMine) count++;
               }
             }
           }
-          this.boardData[row][col].adjacentMines = adjacent;
+          grid[r][c].adjacentMines = count;
         }
       }
-
+      this.boardData = grid;
       this.minesLeft = this.mineCount;
+      this.gameOver = false;
+      this.won = false;
+      this.lost = false;
     },
     handleCellClicked(rowIndex, colIndex) {
       if (this.gameOver) return;
       const cell = this.boardData[rowIndex][colIndex];
       if (cell.isFlagged) return;
-
       if (cell.isMine) {
         this.gameOver = true;
+        this.lost = true;
+        this.won = false;
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            if (this.boardData[r][c].isMine) this.boardData[r][c].isRevealed = true;
+          }
+        }
       } else {
         this.revealCell(rowIndex, colIndex);
-        this.checkWin();
+        if (this.checkWin()) {
+          this.won = true;
+          this.lost = false;
+        }
       }
     },
     handleCellFlagged(rowIndex, colIndex) {
@@ -160,37 +147,26 @@ export default {
       const cell = this.boardData[rowIndex][colIndex];
       if (cell.isRevealed) return;
       cell.isFlagged = !cell.isFlagged;
-      // update minesLeft: assume flags represent mines left to find
       this.minesLeft += cell.isFlagged ? -1 : 1;
     },
     revealCell(rowIndex, colIndex) {
       if (this.gameOver) return;
       const cell = this.boardData[rowIndex][colIndex];
-      if (cell.isRevealed) return;
-      if (cell.isFlagged) return;
-
+      if (!cell || cell.isRevealed || cell.isFlagged) return;
       cell.isRevealed = true;
-
       if (cell.adjacentMines === 0) {
-        for (let i = -1; i <= 1; i++) {
-          for (let j = -1; j <= 1; j++) {
-            const neighborRow = rowIndex + i;
-            const neighborCol = colIndex + j;
-            if (
-              neighborRow >= 0 &&
-              neighborRow < this.rows &&
-              neighborCol >= 0 &&
-              neighborCol < this.cols
-            ) {
-              this.revealCell(neighborRow, neighborCol);
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = rowIndex + dr;
+            const nc = colIndex + dc;
+            if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+              this.revealCell(nr, nc);
             }
           }
         }
       }
-      this.checkWin();
     },
     checkWin() {
-      // If every non-mine cell is revealed, player wins
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
           const cell = this.boardData[r][c];
@@ -198,15 +174,18 @@ export default {
         }
       }
       this.gameOver = true;
+      this.won = true;
+      this.lost = false;
       return true;
     },
     restart() {
       this.gameOver = false;
+      this.won = false;
+      this.lost = false;
       this.initializeBoard();
       this.updateCellSize();
     },
     startNewBoard() {
-      // sanitize inputs
       this.rows = Math.max(2, Math.floor(this.inputRows));
       this.cols = Math.max(2, Math.floor(this.inputCols));
       const maxMines = Math.max(1, this.rows * this.cols - 1);
@@ -215,13 +194,10 @@ export default {
       this.updateCellSize();
     },
     updateCellSize() {
-      // compute an appropriate cell size based on viewport width
       try {
         const vw = Math.min(window.innerWidth, 800);
-        // leave some padding for controls and margins
         const usable = Math.max(120, vw - 48);
         const size = Math.floor(usable / this.cols);
-        // clamp size between 12 and 40
         this.cellSize = Math.max(12, Math.min(40, size));
       } catch (e) {
         this.cellSize = 24;
@@ -238,6 +214,21 @@ export default {
   align-items: center;
   padding: 16px;
 }
+.controls {
+  margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.controls label { font-size: 0.9rem; }
+.controls input { width: 60px; }
+.controls button {
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background: #f8fafc;
+  cursor: pointer;
+}
 .board {
   display: grid;
   grid-template-columns: repeat(var(--cols), var(--cell-size));
@@ -246,21 +237,24 @@ export default {
   background: #fff;
   padding: 8px;
 }
-.status {
-  margin-top: 8px;
-  font-size: 0.9rem;
+.status { margin-top: 8px; font-size: 0.9rem; }
+.overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
 }
-</style>
-
-<style scoped>
-.controls {
-  margin-bottom: 8px;
+.overlay-content {
+  background: white;
+  padding: 20px 28px;
+  border-radius: 8px;
+  text-align: center;
 }
-.controls button {
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  background: #f8fafc;
-  cursor: pointer;
-}
+.overlay.win .overlay-content { border: 3px solid #16a34a; }
+.overlay.lose .overlay-content { border: 3px solid #dc2626; }
 </style>
