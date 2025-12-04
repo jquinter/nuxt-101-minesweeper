@@ -8,9 +8,20 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' }
       ]
     }
-  }
-  ,
+  },
+  modules: [
+    '@pinia/nuxt',
+  ],
+  pinia: {
+    storesDirs: ['./app/stores/**'],
+  },
   vite: {
+    resolve: {
+      alias: {
+        '~': './',
+        '@': './',
+      },
+    },
     server: {
       hmr: {
         host: '0.0.0.0',

@@ -8,7 +8,7 @@
       <button @click="restart">Restart</button>
     </div>
 
-    <div class="board" :style="{ '--cell-size': cellSize + 'px', '--cols': cols }">
+    <div class="board" :style="{ '--cell-size': cellSize + 'px', '--cols': minesweeperStore.cols }">
       <Cell
         v-for="item in cellsList"
         :key="item.row + '-' + item.col"
@@ -21,198 +21,96 @@
       />
     </div>
 
-    <div class="status">Mines left: {{ minesLeft }}</div>
+    <div class="status">Mines left: {{ minesweeperStore.minesLeft }}</div>
 
-    <div v-if="won || lost" class="overlay" :class="{ win: won, lose: lost }">
+    <div v-if="minesweeperStore.won || minesweeperStore.lost" class="overlay" :class="{ win: minesweeperStore.won, lose: minesweeperStore.lost }">
       <div class="overlay-content">
-        <h2>{{ won ? 'You Win!' : 'You Lose' }}</h2>
+        <h2>{{ minesweeperStore.won ? 'You Win!' : 'You Lose' }}</h2>
         <button @click="restart">Play Again</button>
       </div>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { useMinesweeperStore } from '../stores/minesweeper';
 import Cell from './Cell.vue';
 
-export default {
-  name: 'Board',
-  components: { Cell },
-  data() {
-    const defaultRows = 9;
-    const defaultCols = 9;
-    const defaultMines = 10;
+const minesweeperStore = useMinesweeperStore();
 
-    return {
-      inputRows: defaultRows,
-      inputCols: defaultCols,
-      inputMines: defaultMines,
-      rows: defaultRows,
-      cols: defaultCols,
-      mineCount: defaultMines,
-      boardData: [],
-      minesLeft: defaultMines,
-      gameOver: false,
-      won: false,
-      lost: false,
-      debugMode: false,
-      cellSize: 24
-    };
-  },
-  mounted() {
-    this.startNewBoard();
-    this.updateCellSize();
-    window.addEventListener('resize', this.updateCellSize);
-    try {
-      const params = new URLSearchParams(window.location.search);
-      this.debugMode = params.has('DEBUG');
-    } catch (e) {
-      this.debugMode = false;
-    }
-  },
-  unmounted() {
-    window.removeEventListener('resize', this.updateCellSize);
-  },
-  computed: {
-    cellsList() {
-      const list = [];
-      for (let r = 0; r < this.rows; r++) {
-        for (let c = 0; c < this.cols; c++) {
-          const cell = (this.boardData[r] && this.boardData[r][c])
-            ? this.boardData[r][c]
-            : { isRevealed: false, isMine: false, isFlagged: false, adjacentMines: 0 };
-          list.push({ row: r, col: c, cell });
-        }
-      }
-      return list;
-    }
-  },
-  methods: {
-    initializeBoard() {
-      const grid = [];
-      for (let r = 0; r < this.rows; r++) {
-        const row = [];
-        for (let c = 0; c < this.cols; c++) {
-          row.push({ isMine: false, isRevealed: false, isFlagged: false, adjacentMines: 0 });
-        }
-        grid.push(row);
-      }
-      let placed = 0;
-      while (placed < this.mineCount) {
-        const r = Math.floor(Math.random() * this.rows);
-        const c = Math.floor(Math.random() * this.cols);
-        if (!grid[r][c].isMine) {
-          grid[r][c].isMine = true;
-          placed++;
-        }
-      }
-      for (let r = 0; r < this.rows; r++) {
-        for (let c = 0; c < this.cols; c++) {
-          if (grid[r][c].isMine) continue;
-          let count = 0;
-          for (let dr = -1; dr <= 1; dr++) {
-            for (let dc = -1; dc <= 1; dc++) {
-              if (dr === 0 && dc === 0) continue;
-              const nr = r + dr;
-              const nc = c + dc;
-              if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
-                if (grid[nr][nc].isMine) count++;
-              }
-            }
-          }
-          grid[r][c].adjacentMines = count;
-        }
-      }
-      this.boardData = grid;
-      this.minesLeft = this.mineCount;
-      this.gameOver = false;
-      this.won = false;
-      this.lost = false;
-    },
-    handleCellClicked(rowIndex, colIndex) {
-      if (this.gameOver) return;
-      const cell = this.boardData[rowIndex][colIndex];
-      if (cell.isFlagged) return;
-      if (cell.isMine) {
-        this.gameOver = true;
-        this.lost = true;
-        this.won = false;
-        for (let r = 0; r < this.rows; r++) {
-          for (let c = 0; c < this.cols; c++) {
-            if (this.boardData[r][c].isMine) this.boardData[r][c].isRevealed = true;
-          }
-        }
-      } else {
-        this.revealCell(rowIndex, colIndex);
-        if (this.checkWin()) {
-          this.won = true;
-          this.lost = false;
-        }
-      }
-    },
-    handleCellFlagged(rowIndex, colIndex) {
-      if (this.gameOver) return;
-      const cell = this.boardData[rowIndex][colIndex];
-      if (cell.isRevealed) return;
-      cell.isFlagged = !cell.isFlagged;
-      this.minesLeft += cell.isFlagged ? -1 : 1;
-    },
-    revealCell(rowIndex, colIndex) {
-      if (this.gameOver) return;
-      const cell = this.boardData[rowIndex][colIndex];
-      if (!cell || cell.isRevealed || cell.isFlagged) return;
-      cell.isRevealed = true;
-      if (cell.adjacentMines === 0) {
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            const nr = rowIndex + dr;
-            const nc = colIndex + dc;
-            if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
-              this.revealCell(nr, nc);
-            }
-          }
-        }
-      }
-    },
-    checkWin() {
-      for (let r = 0; r < this.rows; r++) {
-        for (let c = 0; c < this.cols; c++) {
-          const cell = this.boardData[r][c];
-          if (!cell.isMine && !cell.isRevealed) return false;
-        }
-      }
-      this.gameOver = true;
-      this.won = true;
-      this.lost = false;
-      return true;
-    },
-    restart() {
-      this.gameOver = false;
-      this.won = false;
-      this.lost = false;
-      this.initializeBoard();
-      this.updateCellSize();
-    },
-    startNewBoard() {
-      this.rows = Math.max(2, Math.floor(this.inputRows));
-      this.cols = Math.max(2, Math.floor(this.inputCols));
-      const maxMines = Math.max(1, this.rows * this.cols - 1);
-      this.mineCount = Math.min(Math.max(1, Math.floor(this.inputMines)), maxMines);
-      this.initializeBoard();
-      this.updateCellSize();
-    },
-    updateCellSize() {
-      try {
-        const vw = Math.min(window.innerWidth, 800);
-        const usable = Math.max(120, vw - 48);
-        const size = Math.floor(usable / this.cols);
-        this.cellSize = Math.max(12, Math.min(40, size));
-      } catch (e) {
-        this.cellSize = 24;
-      }
+const inputRows = ref(minesweeperStore.rows || 9);
+const inputCols = ref(minesweeperStore.cols || 9);
+const inputMines = ref(minesweeperStore.mines || 10);
+const cellSize = ref(24);
+const debugMode = ref(false);
+
+const startNewBoard = () => {
+  const rows = Math.max(2, Math.floor(inputRows.value));
+  const cols = Math.max(2, Math.floor(inputCols.value));
+  const maxMines = Math.max(1, rows * cols - 1);
+  const mines = Math.min(Math.max(1, Math.floor(inputMines.value)), maxMines);
+  minesweeperStore.startNewGame(rows, cols, mines);
+  updateCellSize();
+};
+
+const restart = () => {
+  minesweeperStore.startNewGame(minesweeperStore.rows, minesweeperStore.cols, minesweeperStore.mines);
+  updateCellSize();
+};
+
+const handleCellClicked = (rowIndex, colIndex) => {
+  minesweeperStore.revealCell(rowIndex, colIndex);
+};
+
+const handleCellFlagged = (rowIndex, colIndex) => {
+  minesweeperStore.handleCellFlagged(rowIndex, colIndex);
+};
+
+const cellsList = computed(() => {
+  const list = [];
+  const rows = minesweeperStore.rows;
+  const cols = minesweeperStore.cols;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = (minesweeperStore.boardData[r] && minesweeperStore.boardData[r][c])
+        ? minesweeperStore.boardData[r][c]
+        : { isRevealed: false, isMine: false, isFlagged: false, adjacentMines: 0 };
+      list.push({ row: r, col: c, cell });
     }
   }
+  return list;
+});
+
+const updateCellSize = () => {
+  try {
+    const vw = Math.min(window.innerWidth, 800);
+    const usable = Math.max(120, vw - 48);
+    const size = Math.floor(usable / minesweeperStore.cols);
+    cellSize.value = Math.max(12, Math.min(40, size));
+  } catch (e) {
+    cellSize.value = 24;
+  }
 };
+
+onMounted(() => {
+  minesweeperStore.loadState(); // Attempt to load state
+  if (minesweeperStore.boardData.length === 0) { // If no state was loaded or it was empty
+    minesweeperStore.startNewGame(inputRows.value, inputCols.value, inputMines.value);
+  }
+  updateCellSize();
+  window.addEventListener('resize', updateCellSize);
+  try {
+    const params = new URLSearchParams(window.location.search);
+    debugMode.value = params.has('DEBUG');
+  } catch (e) {
+    debugMode.value = false;
+  }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateCellSize);
+});
 </script>
 
 <style scoped>

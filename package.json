@@ -8,20 +8,22 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "test": "vitest"
+    "test": "vitest --run"
   },
   "dependencies": {
+    "@pinia/nuxt": "^0.11.3",
+    "@pinia/testing": "^1.0.3",
     "nuxt": "^4.2.1",
+    "pinia": "^3.0.4",
     "vue": "^3.5.25",
     "vue-router": "^4.6.3"
-  }
-  ,
+  },
   "devDependencies": {
-    "vitest": "^1.0.0",
-    "@vue/test-utils": "^2.0.0-rc.18",
-    "jsdom": "^22.1.0"
-  ,
     "@vitejs/plugin-vue": "^6.0.2",
-    "@vitest/coverage-v8": "^1.0.0"
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vue/test-utils": "^2.0.0-rc.18",
+    "jsdom": "^22.1.0",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^1.0.0"
   }
 }
