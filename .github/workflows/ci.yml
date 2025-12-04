@@ -36,19 +36,15 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage
+          name: coverage-${{ matrix.node-version }}
           path: coverage
 
       - name: Upload coverage to Codecov
-        if: always()
+        if: always() && matrix.node-version == '22.x'
         uses: codecov/codecov-action@v4
         with:
           files: coverage/lcov.info
           fail_ci_if_error: false
-          # enable posting report to PRs when possible
-          comment: true
-          # prefer a detailed GitHub PR comment
-          comment_type: "summary"
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
