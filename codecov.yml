@@ -1,0 +1,22 @@
+# Codecov configuration for nuxt-101-minesweeper
+# - Project status requires overall coverage >= 80%
+# - Patch status has no minimum (useful for small PRs)
+# - Configure PR comment layout to show coverage reach and diff
+
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+    patch:
+      default:
+        target: 0%
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: false
+
+# Optionally enforce CI to pass before marking uploads (use Codecov project settings for stronger enforcement)
+codecov:
+  require_ci_to_pass: yes
