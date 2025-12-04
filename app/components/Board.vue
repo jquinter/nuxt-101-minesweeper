@@ -34,7 +34,6 @@
       <p v-if="gameOver">Game Over! </p>
     </div>
   </div>
-  </div>
 </template>
 
 <script>
@@ -43,17 +42,34 @@ import Cell from './Cell.vue';
 export default {
   components: { Cell },
   data() {
+    // initialize boardData synchronously so SSR / computed props don't access undefined
+    const initialRows = 10;
+    const initialCols = 10;
+    const initialMines = 15;
+    const boardData = [];
+    for (let r = 0; r < initialRows; r++) {
+      boardData[r] = [];
+      for (let c = 0; c < initialCols; c++) {
+        boardData[r][c] = {
+          isMine: false,
+          isRevealed: false,
+          isFlagged: false,
+          adjacentMines: 0
+        };
+      }
+    }
+
     return {
       // UI inputs
-      inputRows: 10,
-      inputCols: 10,
-      inputMines: 15,
+      inputRows: initialRows,
+      inputCols: initialCols,
+      inputMines: initialMines,
 
       // internal board state
-      rows: 10,
-      cols: 10,
-      mineCount: 15,
-      boardData: [],
+      rows: initialRows,
+      cols: initialCols,
+      mineCount: initialMines,
+      boardData: boardData,
       minesLeft: 0,
       gameOver: false,
 
