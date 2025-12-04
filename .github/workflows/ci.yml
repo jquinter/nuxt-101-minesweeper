@@ -42,5 +42,9 @@ jobs:
         with:
           files: coverage/lcov.info
           fail_ci_if_error: false
+          # enable posting report to PRs when possible
+          comment: true
+          # prefer a detailed GitHub PR comment
+          comment_type: "summary"
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
