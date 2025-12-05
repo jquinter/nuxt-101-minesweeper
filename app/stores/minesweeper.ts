@@ -114,7 +114,9 @@ export const useMinesweeperStore = defineStore('minesweeper', {
             if (dr === 0 && dc === 0) continue;
             const nr = rowIndex + dr;
             const nc = colIndex + dc;
-            this.revealCell(nr, nc); // Recursive call
+            if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) { // Boundary check
+              this.revealCell(nr, nc); // Recursive call
+            }
           }
         }
       }

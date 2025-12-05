@@ -291,5 +291,46 @@ describe('Board component', () => {
 
     expect(minesweeperStore.boardData[0][0].isRevealed).toBe(true);
     expect(minesweeperStore.boardData[1][1].isRevealed).toBe(true);
-  })
+  });
+
+  it('handles URLSearchParams error in onMounted', async () => {
+    // Save original window.location to restore it later
+    const originalWindowLocation = window.location;
+
+    // Temporarily redefine window.location.search to throw an error
+    Object.defineProperty(window, 'location', {
+      get: () => ({
+        search: '?%invalid-param' // Malformed URL parameter to cause URLSearchParams to throw
+      }),
+      configurable: true // Allow redefinition
+    });
+    
+    // Remount the component to re-trigger onMounted with the mocked location
+    const newWrapper = mount(Board);
+    
+    // Assert that debugMode is false due to the error in parsing
+    expect(newWrapper.vm.debugMode).toBe(false);
+
+    // Restore original window.location
+    Object.defineProperty(window, 'location', { value: originalWindowLocation, configurable: true });
+  });
+
+  // Add test for updateCellSize error here (lines 58-60 and 107-108)
+  it('handles errors in updateCellSize', async () => {
+    // Mock window.innerWidth to cause an error
+    const originalWindowInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', {
+      get: () => { throw new Error('Simulated innerWidth error'); },
+      configurable: true,
+    });
+
+    // Manually call updateCellSize
+    wrapper.vm.updateCellSize();
+
+    // Assert that cellSize is reset to default (24) due to the error
+    expect(wrapper.vm.cellSize).toBe(24);
+
+    // Restore original window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { value: originalWindowInnerWidth, configurable: true });
+  });
 })
